@@ -9,10 +9,8 @@ project(TraceWebG
     DESCRIPTION "WebGPU Ray Tracing in C"
     LANGUAGES C CXX)
 
-# if (CMAKE_BUILD_TYPE STREQUAL "Debug")
-#   add_compile_options(-fsanitize=address,undefined)
-#   add_link_options(-fsanitize=address,undefined)
-# endif()
+# add_compile_options(-fsanitize=address,undefined)
+# add_link_options(-fsanitize=address,undefined)
 
 set(FETCHCONTENT_QUIET FALSE CACHE BOOL "" FORCE)
 
