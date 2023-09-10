@@ -14,6 +14,7 @@
 #include <fstream>
 #include <iostream>
 #include <sstream>
+#include <string>
 #include <utility>
 
 CMRC_DECLARE(shaders);
@@ -135,7 +136,8 @@ wgpu::ShaderModule loadShader(wgpu::Device device,
   std::string label = name + " shader module";
   auto f = fs.open(path);
   wgpu::ShaderModuleWGSLDescriptor wgslDesc;
-  wgslDesc.code = &(*f.begin());
+  std::string code{f.begin(), f.end()};
+  wgslDesc.code = code.c_str();
   wgpu::ShaderModuleDescriptor desc{
       .nextInChain = &wgslDesc,
       .label = label.c_str(),
@@ -154,7 +156,7 @@ int main() {
   auto fs = cmrc::shaders::get_filesystem();
 
   TracerConfig config{
-      .size = {1920, 1080},
+      .size = {3480, 2160},
   };
 
   auto instance = wgpu::CreateInstance();
@@ -275,6 +277,12 @@ int main() {
       },
       nullptr);
 
+  std::cerr << "waiting on render..." << '\n';
+
+  // so there seems to be no way to poll the dawn device and just wait until
+  // the gpu has finished it's work so we just check when the buffer is
+  // successfully mapped (guaranteed to be after the pipeline) and then
+  // call it a day from there.
   const uint8_t *paddedOutput;
   bool complete = false;
   while (!complete) {
