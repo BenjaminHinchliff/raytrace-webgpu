@@ -156,7 +156,7 @@ int main() {
   auto fs = cmrc::shaders::get_filesystem();
 
   TracerConfig config{
-      .size = {3480, 2160},
+      .size = {1920, 1080},
   };
 
   auto instance = wgpu::CreateInstance();
