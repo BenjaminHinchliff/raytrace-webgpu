@@ -1,30 +1,40 @@
-#include <cstdlib>
-#include <fstream>
-#include <glfwpp/glfwpp.h>
-#include <sstream>
-#include <stdexcept>
-#include <string>
-#include <string_view>
 #include <webgpu/webgpu_cpp.h>
 #include <webgpu/webgpu_glfw.h>
 
+#define STB_IMAGE_WRITE_IMPLEMENTATION
+#include <stb/stb_image_write.h>
+
+#include <glm/vec2.hpp>
+
+#include <cstddef>
 #include <cstdint>
+#include <cstdlib>
+#include <fstream>
 #include <iostream>
+#include <sstream>
+#include <utility>
+
+class TracerConfig {
+public:
+  glm::uvec2 size;
+};
+
+#define EXPLICIT_UNUSED(ident) (void)ident
 
 void Error(WGPUErrorType type, const char *msg, void *) {
   switch (type) {
   case WGPUErrorType_OutOfMemory:
-    std::cerr << "[Error] Out Of Memory: " << msg << std::endl;
+    std::cerr << "[Error] Out Of Memory: " << msg << '\n';
     abort();
   case WGPUErrorType_Validation:
-    std::cerr << "[Error Validation: " << msg << std::endl;
+    std::cerr << "[Error Validation: " << msg << '\n';
     abort();
   case WGPUErrorType_NoError:
   case WGPUErrorType_Unknown:
   case WGPUErrorType_DeviceLost:
   case WGPUErrorType_Force32:
   case WGPUErrorType_Internal:
-    std::cerr << msg << std::endl;
+    std::cerr << msg << '\n';
     break;
   }
 }
@@ -33,13 +43,13 @@ void DeviceLost(WGPUDeviceLostReason reason, char const *msg, void *) {
   std::cerr << "[Device Lost]: ";
   switch (reason) {
   case WGPUDeviceLostReason_Undefined:
-    std::cerr << "Undefined: " << msg << std::endl;
+    std::cerr << "Undefined: " << msg << '\n';
     break;
   case WGPUDeviceLostReason_Destroyed:
-    std::cerr << "Destroyed: " << msg << std::endl;
+    std::cerr << "Destroyed: " << msg << '\n';
     break;
   case WGPUDeviceLostReason_Force32:
-    std::cerr << "Force32: " << msg << std::endl;
+    std::cerr << "Force32: " << msg << '\n';
     break;
   }
 }
@@ -86,7 +96,22 @@ void Logging(WGPULoggingType type, const char *msg, void *) {
     std::cerr << "Log [Force32]: ";
     break;
   }
-  std::cerr << msg << std::endl;
+  std::cerr << msg << '\n';
+}
+
+constexpr uint32_t BYTES_PER_ROW_ALIGN = 256;
+
+uint32_t paddedBytesPerRow(uint32_t width) {
+  uint32_t bytesPerRow = width * 4;
+  uint32_t padding = (BYTES_PER_ROW_ALIGN - bytesPerRow % BYTES_PER_ROW_ALIGN) %
+                     BYTES_PER_ROW_ALIGN;
+  return bytesPerRow + padding;
+}
+
+constexpr glm::uvec2 WORKGROUP_SIZE{16, 16};
+
+glm::uvec2 calculateWorkgroups(glm::uvec2 size) {
+  return (size + WORKGROUP_SIZE - glm::uvec2{1}) / WORKGROUP_SIZE;
 }
 
 std::string readFileToString(const std::string &path) {
@@ -119,6 +144,10 @@ int main() {
   //                   .cocoaRetinaFramebuffer = false}
   //     .apply();
   // glfw::Window window{640, 480, "TraceG"};
+
+  TracerConfig config{
+      .size = {1920, 1080},
+  };
 
   auto instance = wgpu::CreateInstance();
 
@@ -162,11 +191,12 @@ int main() {
   };
   auto computePipeline = device.CreateComputePipeline(&compPipeDesc);
 
+  wgpu::Extent3D outputExtent{config.size.x, config.size.y};
   wgpu::TextureDescriptor outputTextureDesc{
       .label = "Output texture",
       .usage = wgpu::TextureUsage::CopySrc | wgpu::TextureUsage::StorageBinding,
       .dimension = wgpu::TextureDimension::e2D,
-      .size = {16, 16},
+      .size = outputExtent,
       .format = wgpu::TextureFormat::RGBA8Unorm,
       .mipLevelCount = 1,
       .sampleCount = 1,
@@ -199,14 +229,16 @@ int main() {
     auto computePass = computeEncoder.BeginComputePass(&passDesc);
     computePass.SetPipeline(computePipeline);
     computePass.SetBindGroup(0, computeOutputBindGroup);
-    computePass.DispatchWorkgroups(1, 1);
+    glm::uvec2 workgroups{config.size / WORKGROUP_SIZE};
+    computePass.DispatchWorkgroups(workgroups.x, workgroups.y + 1);
     computePass.End();
   }
 
+  uint32_t bytesPerRow = paddedBytesPerRow(config.size.x);
   wgpu::BufferDescriptor outputBufferDesc{
       .label = "Output Buffer",
       .usage = wgpu::BufferUsage::CopyDst | wgpu::BufferUsage::MapRead,
-      .size = 64 * 64 * 4,
+      .size = bytesPerRow * config.size.y,
   };
   auto outputBuffer = device.CreateBuffer(&outputBufferDesc);
   wgpu::ImageCopyTexture texSrc{
@@ -215,39 +247,46 @@ int main() {
   wgpu::ImageCopyBuffer bufDst{
       .layout =
           {
-              .bytesPerRow = 64 * 4,
+              .bytesPerRow = bytesPerRow,
           },
       .buffer = outputBuffer,
   };
-  wgpu::Extent3D copySize{16, 16};
-  computeEncoder.CopyTextureToBuffer(&texSrc, &bufDst, &copySize);
+  computeEncoder.CopyTextureToBuffer(&texSrc, &bufDst, &outputExtent);
 
   auto commands = computeEncoder.Finish();
   device.GetQueue().Submit(1, &commands);
 
   outputBuffer.MapAsync(
-      wgpu::MapMode::Read, 0, 64 * 64 * 4,
+      wgpu::MapMode::Read, 0, bytesPerRow * config.size.y,
       [](WGPUBufferMapAsyncStatus cStatus, void *userdata) {
+        EXPLICIT_UNUSED(userdata);
         wgpu::BufferMapAsyncStatus status{cStatus};
         if (status != wgpu::BufferMapAsyncStatus::Success) {
-          std::cerr << "map failed?!: " << static_cast<int>(status) << '\n';
+          std::cerr << "map failed: " << static_cast<int>(status) << '\n';
         }
-        (void)userdata;
       },
       nullptr);
 
-  for (;;) {
+  const uint8_t *paddedOutput;
+  bool complete = false;
+  while (!complete) {
     device.Tick();
     if (outputBuffer.GetMapState() == wgpu::BufferMapState::Mapped) {
-      const uint8_t *output =
-          reinterpret_cast<const uint8_t *>(outputBuffer.GetConstMappedRange());
-      for (int i = 0; i < 4 * 128; i++) {
-        std::cerr << (uint32_t)output[i] << " ";
-      }
-      std::cerr << '\n';
-      break;
+      paddedOutput =
+          static_cast<const uint8_t *>(outputBuffer.GetConstMappedRange());
+      complete = true;
     }
   }
+
+  std::vector<uint8_t> output;
+  output.reserve(config.size.x * config.size.y * 4);
+  for (size_t y = 0; y < config.size.y; y++) {
+    auto start = &paddedOutput[bytesPerRow * y];
+    output.insert(output.end(), start, start + (config.size.x * 4));
+  }
+
+  stbi_write_png("out.png", config.size.x, config.size.y, 4, output.data(),
+                 config.size.x * 4);
 
   // dusk::dump_utils::DumpDevice(device);
 

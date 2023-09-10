@@ -25,6 +25,26 @@ CPMAddPackage(
 )
 
 CPMAddPackage(
+    NAME stb
+    GIT_REPOSITORY https://github.com/nothings/stb.git
+    GIT_TAG 5736b15f7ea0ffb08dd38af21067c314d6a3aae9
+    GIT_PROGRESS TRUE
+)
+
+if (stb_ADDED)
+    add_library(stb INTERFACE)
+    target_include_directories(stb INTERFACE ${stb_SOURCE_DIR})
+endif()
+
+CPMAddPackage(
+    NAME glm
+    VERSION 0.9.9.8
+    GIT_REPOSITORY https://github.com/g-truc/glm.git
+    GIT_TAG 0.9.9.8
+    GIT_PROGRESS TRUE
+)
+
+CPMAddPackage(
     NAME depot_tools
     GIT_REPOSITORY https://chromium.googlesource.com/chromium/tools/depot_tools.git
     GIT_TAG 28116103e4df01890abfa5f1d15a003f69729d81
