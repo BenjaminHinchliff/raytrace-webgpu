@@ -3,6 +3,4 @@ set(SHADERS
   "vertex.wgsl"
   "compute.wgsl")
 
-foreach(SHADER ${SHADERS})
-  configure_file(${SHADER} ${CMAKE_CURRENT_BINARY_DIR}/${SHADER} COPYONLY)
-endforeach()
+cmrc_add_resource_library(shaders ${SHADERS})

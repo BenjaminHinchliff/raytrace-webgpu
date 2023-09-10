@@ -17,6 +17,14 @@ set(FETCHCONTENT_QUIET FALSE CACHE BOOL "" FORCE)
 include(cmake/CPM.cmake)
 
 CPMAddPackage(
+    NAME cmrc
+    OPTIONS "BUILD_TESTS OFF"
+    GIT_REPOSITORY https://github.com/vector-of-bool/cmrc.git
+    GIT_TAG 2.0.1
+    GIT_PROGRESS TRUE
+)
+
+CPMAddPackage(
     NAME glfwpp
     OPTIONS "GLFWPP_BUILD_EXAMPLES OFF"
     GIT_REPOSITORY https://github.com/BenjaminHinchliff/glfwpp.git
@@ -38,6 +46,7 @@ endif()
 
 CPMAddPackage(
     NAME glm
+    OPTIONS "BUILD_SHARED_LIBS OFF"
     VERSION 0.9.9.8
     GIT_REPOSITORY https://github.com/g-truc/glm.git
     GIT_TAG 0.9.9.8

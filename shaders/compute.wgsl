@@ -9,6 +9,13 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         return;
     }
 
-    let color = vec3<f32>(vec2<f32>(coords) / vec2<f32>(dims), 0.0);
+    let aspect = f32(dims.y) / f32(dims.x);
+
+    let viewport_height = 2.0;
+    let viewport = vec2<f32>(viewport_height / aspect, viewport_height);
+    let viewport_delta = viewport / vec2<f32>(dims);
+    let viewport_upper_left = -viewport / 2.0;
+    let uv = viewport_upper_left + viewport_delta * vec2<f32>(coords.xy);
+    let color = vec3<f32>(abs(uv), 0.0);
     textureStore(output_texture, coords.xy, vec4<f32>(color, 1.0));
 }

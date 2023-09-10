@@ -1,3 +1,5 @@
+#include <cmrc/cmrc.hpp>
+
 #include <webgpu/webgpu_cpp.h>
 #include <webgpu/webgpu_glfw.h>
 
@@ -13,6 +15,8 @@
 #include <iostream>
 #include <sstream>
 #include <utility>
+
+CMRC_DECLARE(shaders);
 
 class TracerConfig {
 public:
@@ -124,12 +128,14 @@ std::string readFileToString(const std::string &path) {
   return buffer.str();
 }
 
-wgpu::ShaderModule loadShader(wgpu::Device device, const std::string &name) {
-  std::string path = "shaders/" + name + ".wgsl";
+wgpu::ShaderModule loadShader(wgpu::Device device,
+                              cmrc::embedded_filesystem &fs,
+                              const std::string &name) {
+  std::string path = name + ".wgsl";
   std::string label = name + " shader module";
-  std::string shaderWgsl = readFileToString(path);
+  auto f = fs.open(path);
   wgpu::ShaderModuleWGSLDescriptor wgslDesc;
-  wgslDesc.code = shaderWgsl.c_str();
+  wgslDesc.code = &(*f.begin());
   wgpu::ShaderModuleDescriptor desc{
       .nextInChain = &wgslDesc,
       .label = label.c_str(),
@@ -144,6 +150,8 @@ int main() {
   //                   .cocoaRetinaFramebuffer = false}
   //     .apply();
   // glfw::Window window{640, 480, "TraceG"};
+
+  auto fs = cmrc::shaders::get_filesystem();
 
   TracerConfig config{
       .size = {1920, 1080},
@@ -179,7 +187,7 @@ int main() {
   device.SetLoggingCallback(Logging, nullptr);
 
   // compute pipeline
-  auto computeShader = loadShader(device, "compute");
+  auto computeShader = loadShader(device, fs, "compute");
 
   wgpu::ComputePipelineDescriptor compPipeDesc{
       .label = "Raytrace pipeline",
@@ -229,8 +237,8 @@ int main() {
     auto computePass = computeEncoder.BeginComputePass(&passDesc);
     computePass.SetPipeline(computePipeline);
     computePass.SetBindGroup(0, computeOutputBindGroup);
-    glm::uvec2 workgroups{config.size / WORKGROUP_SIZE};
-    computePass.DispatchWorkgroups(workgroups.x, workgroups.y + 1);
+    glm::uvec2 workgroups = calculateWorkgroups(config.size);
+    computePass.DispatchWorkgroups(workgroups.x, workgroups.y);
     computePass.End();
   }
 

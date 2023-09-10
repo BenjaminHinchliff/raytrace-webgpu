@@ -6,7 +6,7 @@ set(TRACEG_SRC
 add_executable(traceg ${TRACEG_SRC} ${TRACEG_INC})
 
 target_compile_features(traceg PRIVATE cxx_std_20)
-target_link_libraries(traceg PRIVATE webgpu_dawn webgpu_cpp stb glm)
+target_link_libraries(traceg PRIVATE webgpu_dawn webgpu_cpp stb glm shaders)
 
 if(MSVC)
   target_compile_options(traceg PRIVATE /W4 /WX)
