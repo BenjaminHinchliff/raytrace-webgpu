@@ -1,7 +1,9 @@
-set(TRACEG_INC)
+set(TRACEG_INC
+  "render.hpp")
 
 set(TRACEG_SRC
-  "main.cpp")
+  "main.cpp"
+  "render.cpp")
 
 add_executable(traceg ${TRACEG_SRC} ${TRACEG_INC})
 
