@@ -50,7 +50,7 @@ fn hitrecord_set_face_normal(record: ptr<function, HitRecord>, ray: Ray) {
 }
 
 // , record: HitRecord
-fn hit(sphere: Sphere, ray: Ray, tmin: f32, tmax: f32) -> HitRecord {
+fn hit_sphere(sphere: Sphere, ray: Ray, tmin: f32, tmax: f32) -> HitRecord {
     var record: HitRecord;
     record.hit = false;
 
@@ -82,17 +82,29 @@ fn hit(sphere: Sphere, ray: Ray, tmin: f32, tmax: f32) -> HitRecord {
     return record;
 }
 
-fn hits(spheres: array<Sphere, 2>, ray: Ray, tmin: f32, tmax: f32) -> HitRecord {
+struct Plane {
+    point: vec3<f32>,
+    normal: vec3<f32>,
+}
+
+fn hit_plane(plane: Plane, ray: Ray, tmin: f32, tmax: f32) -> HitRecord {
     var record: HitRecord;
     record.hit = false;
-    record.t = tmax;
 
-    for (var i = 0; i < 2; i++) {
-        let temp_rec = hit(spheres[i], ray, tmin, record.t);
-        if temp_rec.hit {
-            record = temp_rec;
+    let denom = dot(plane.normal, ray.direction);
+    if denom > 1e-6 {
+        let t = dot(plane.point - ray.origin, plane.normal) / denom;
+        if t <= tmin || t >= tmax {
+            return record;
         }
+        record.hit = true;
+        record.t = t;
+        record.point = ray_at(ray, record.t);
+        record.normal = plane.normal;
+        hitrecord_set_face_normal(&record, ray);
+        return record;
     }
+
     return record;
 }
 
@@ -124,26 +136,19 @@ fn random_vec3_normalized() -> vec3<f32> {
     return normalize(random_vec3_in_unit_sphere());
 }
 
-const SPHERES = array<Sphere, 2>(
-    Sphere(vec3<f32>(0.0, 0.0, -1.0), 0.5),
-    Sphere(vec3<f32>(0.0, -100.5, -1.0), 100),
-);
-
 const RAY_MAX: f32 = 1e30;
 const MAX_DEPTH: i32 = 10;
 fn ray_color(ray: Ray) -> vec3<f32> {
-    let sphere = Sphere(vec3<f32>(0.0, 0.0, -1.0), 0.5);
-
     let unit_dir = normalize(ray.direction);
     let a = 0.5 * (unit_dir.y + 1.0);
     var color = (1.0 - a) * vec3<f32>(1.0, 1.0, 1.0) + a * vec3<f32>(0.5, 0.7, 1.0);
     var cur_ray = ray;
-    var record = hits(SPHERES, cur_ray, 0.001, RAY_MAX);
+    var record = hit_scene(cur_ray, 0.001, RAY_MAX);
     for (var i = 0; record.hit && i < MAX_DEPTH; i++) {
         color = 0.5 * color;
         let direction = record.normal + random_vec3_normalized();
         cur_ray = Ray(record.point, direction);
-        record = hits(SPHERES, cur_ray, 0.001, RAY_MAX);
+        record = hit_scene(cur_ray, 0.001, RAY_MAX);
     }
 
     return color;
@@ -171,7 +176,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     seed(uid);
 
     let aspect = f32(dims.y) / f32(dims.x);
-    let focal_length = 1.0;
+    let focal_length = 0.5;
     let viewport_height = 2.0;
     let viewport = vec2<f32>(viewport_height / aspect, viewport_height);
     let viewport_delta = vec2<f32>(viewport.x / f32(dims.x), -viewport.y / f32(dims.y));

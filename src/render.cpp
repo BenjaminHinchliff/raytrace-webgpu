@@ -86,7 +86,10 @@ void Logging(WGPULoggingType type, const char *msg, void *) {
 } // namespace logging
 
 Renderer::Renderer(std::string source)
-    : source{source}, instance{wgpu::CreateInstance()} {
+    : source{source}
+
+      ,
+      instance{wgpu::CreateInstance()} {
   // Get Adapter
   instance.RequestAdapter(
       nullptr,
@@ -142,8 +145,9 @@ wgpu::ShaderModule create_shader(wgpu::Device device,
   return device.CreateShaderModule(&desc);
 }
 
-std::vector<uint8_t> Renderer::render_scene(glm::uvec2 size) {
-  auto computeShader = create_shader(device, source);
+std::vector<uint8_t> Renderer::render_scene(Scene scene, glm::uvec2 size) {
+  std::string sourceWithScene{scene.generate() + source};
+  auto computeShader = create_shader(device, sourceWithScene);
 
   wgpu::ComputePipelineDescriptor compPipeDesc{
       .label = "Raytrace pipeline",

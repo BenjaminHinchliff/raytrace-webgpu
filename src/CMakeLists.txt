@@ -1,9 +1,17 @@
 set(TRACEG_INC
-  "render.hpp")
+  "render.hpp"
+  "hittable.hpp"
+  "scene.hpp"
+  "sphere.hpp"
+  "plane.hpp")
 
 set(TRACEG_SRC
   "main.cpp"
-  "render.cpp")
+  "hittable.cpp"
+  "render.cpp"
+  "scene.cpp"
+  "sphere.cpp"
+  "plane.cpp")
 
 add_executable(traceg ${TRACEG_SRC} ${TRACEG_INC})
 
