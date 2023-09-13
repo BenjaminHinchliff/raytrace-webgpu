@@ -12,6 +12,7 @@ class Renderer {
 public:
   Renderer(std::string source);
 
+  wgpu::AdapterProperties adapter_properties() const;
   std::vector<uint8_t> render_scene(glm::uvec2 size);
 
 private:

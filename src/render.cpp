@@ -102,18 +102,18 @@ Renderer::Renderer(std::string source)
       },
       &adapter);
 
-  // wgpu::AdapterProperties adapterProps;
-  // adapter.GetProperties(&adapterProps);
-  //
-  // std::cout << adapterProps.name << ": "
-  //           << backendTypeString(adapterProps.backendType) << '\n';
-
   // Get device
   device = adapter.CreateDevice();
   device.SetLabel("Primary Device");
   device.SetUncapturedErrorCallback(logging::Error, nullptr);
   device.SetDeviceLostCallback(logging::DeviceLost, nullptr);
   device.SetLoggingCallback(logging::Logging, nullptr);
+}
+
+wgpu::AdapterProperties Renderer::adapter_properties() const {
+  wgpu::AdapterProperties adapterProps;
+  adapter.GetProperties(&adapterProps);
+  return adapterProps;
 }
 
 constexpr uint32_t BYTES_PER_ROW_ALIGN = 256;
