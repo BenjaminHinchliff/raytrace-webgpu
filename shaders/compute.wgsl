@@ -156,8 +156,16 @@ fn ray_color(ray: Ray) -> vec3<f32> {
     var record = hit_scene(cur_ray, 0.001, RAY_MAX);
     for (var i = 0; record.hit && i < MAX_DEPTH; i++) {
         color = record.material.data.xyz * color;
-        let direction = record.normal + random_vec3_normalized();
-        cur_ray = Ray(record.point, direction);
+        switch record.material.type_ {
+            case MATERIAL_METAL: {
+                let reflected = reflect(normalize(cur_ray.direction), record.normal);
+                cur_ray = Ray(record.point, reflected + record.material.data.w * random_vec3_normalized());
+            }
+            case MATERIAL_LAMBERTIAN, default: {
+                let direction = record.normal + random_vec3_normalized();
+                cur_ray = Ray(record.point, direction);
+            }
+        }
         record = hit_scene(cur_ray, 0.001, RAY_MAX);
     }
 
