@@ -6,7 +6,8 @@ set(TRACEG_INC
   "hittables/plane.hpp"
   "materials/material.hpp"
   "materials/lambertian.hpp"
-  "materials/metal.hpp")
+  "materials/metal.hpp"
+  "materials/dielectric.hpp")
 
 set(TRACEG_SRC
   "main.cpp"
@@ -17,7 +18,8 @@ set(TRACEG_SRC
   "hittables/plane.cpp"
   "materials/material.cpp"
   "materials/lambertian.cpp"
-  "materials/metal.cpp")
+  "materials/metal.cpp"
+  "materials/dielectric.cpp")
 
 add_executable(traceg ${TRACEG_SRC} ${TRACEG_INC})
 target_include_directories(traceg PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})

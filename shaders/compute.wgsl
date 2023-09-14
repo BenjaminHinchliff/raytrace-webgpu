@@ -21,6 +21,7 @@ fn xorshift32() -> u32 {
 alias MaterialType = u32;
 const MATERIAL_LAMBERTIAN = 0;
 const MATERIAL_METAL = 1;
+const MATERIAL_DIELECTRIC = 2;
 
 struct Material {
     type_: MaterialType,
@@ -146,6 +147,12 @@ fn random_vec3_normalized() -> vec3<f32> {
     return normalize(random_vec3_in_unit_sphere());
 }
 
+fn reflectance(cosine: f32, ref_idx: f32) -> f32 {
+    var r0 = (1.0 - ref_idx) / (1.0 + ref_idx);
+    r0 = r0 * r0;
+    return r0 + (1.0 - r0) * pow(1.0 - cosine, 5.0);
+}
+
 const RAY_MAX: f32 = 1e30;
 const MAX_DEPTH: i32 = 10;
 fn ray_color(ray: Ray) -> vec3<f32> {
@@ -157,12 +164,34 @@ fn ray_color(ray: Ray) -> vec3<f32> {
     for (var i = 0; record.hit && i < MAX_DEPTH; i++) {
         color = record.material.data.xyz * color;
         switch record.material.type_ {
+            case MATERIAL_LAMBERTIAN, default: {
+                let direction = record.normal + random_vec3_normalized();
+                cur_ray = Ray(record.point, direction);
+            }
             case MATERIAL_METAL: {
                 let reflected = reflect(normalize(cur_ray.direction), record.normal);
                 cur_ray = Ray(record.point, reflected + record.material.data.w * random_vec3_normalized());
             }
-            case MATERIAL_LAMBERTIAN, default: {
-                let direction = record.normal + random_vec3_normalized();
+            case MATERIAL_DIELECTRIC: {
+                var refraction_ratio: f32;
+                if record.front_face {
+                    refraction_ratio = 1.0 / record.material.data.w;
+                } else {
+                    refraction_ratio = record.material.data.w;
+                }
+
+                let unit_dir = normalize(cur_ray.direction);
+                let cos_theta = min(dot(-unit_dir, record.normal), 1.0);
+                let sin_theta = sqrt(1.0 - cos_theta * cos_theta);
+
+                let cannot_refract = refraction_ratio * sin_theta > 1.0;
+
+                var direction: vec3<f32>;
+                if cannot_refract || reflectance(cos_theta, refraction_ratio) > random_f32() {
+                    direction = reflect(unit_dir, record.normal);
+                } else {
+                    direction = refract(unit_dir, record.normal, refraction_ratio);
+                }
                 cur_ray = Ray(record.point, direction);
             }
         }
@@ -172,7 +201,7 @@ fn ray_color(ray: Ray) -> vec3<f32> {
     return color;
 }
 
-const SAMPLES_PER_PIXEL = 100;
+const SAMPLES_PER_PIXEL = 2000;
 
 fn random_uv_noise() -> vec2<f32> {
     return vec2<f32>(random_f32_range(-0.5, 0.5), random_f32_range(-0.5, 0.5));
