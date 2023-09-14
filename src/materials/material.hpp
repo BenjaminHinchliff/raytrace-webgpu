@@ -1,5 +1,5 @@
-#ifndef MATERIAL_H_
-#define MATERIAL_H_
+#ifndef MATERIALS_MATERIAL_H_
+#define MATERIALS_MATERIAL_H_
 
 #include <string>
 
@@ -11,4 +11,4 @@ public:
   virtual std::string generate() const = 0;
 };
 
-#endif // !MATERIAL_H_
+#endif // !MATERIALS_MATERIAL_H_

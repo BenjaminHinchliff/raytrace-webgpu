@@ -1,5 +1,5 @@
-#ifndef SPHERE_H_
-#define SPHERE_H_
+#ifndef HITTABLES_SPHERE_H_
+#define HITTABLES_SPHERE_H_
 
 #include "hittable.hpp"
 
@@ -18,4 +18,4 @@ private:
   float radius;
 };
 
-#endif // !SPHERE_H_
+#endif // !HITTABLES_SPHERE_H_

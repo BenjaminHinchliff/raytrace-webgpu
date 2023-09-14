@@ -1,5 +1,5 @@
-#ifndef PLANE_HPP_
-#define PLANE_HPP_
+#ifndef HITTABLES_PLANE_HPP_
+#define HITTABLES_PLANE_HPP_
 
 #include "hittable.hpp"
 #include "materials/material.hpp"
@@ -19,4 +19,4 @@ private:
   glm::vec3 normal;
 };
 
-#endif // !PLANE_HPP_
+#endif // !HITTABLES_PLANE_HPP_

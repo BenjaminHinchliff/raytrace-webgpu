@@ -1,5 +1,5 @@
-#ifndef HITTABLE_HPP_
-#define HITTABLE_HPP_
+#ifndef HITTABLES_HITTABLE_HPP_
+#define HITTABLES_HITTABLE_HPP_
 
 #include "materials/material.hpp"
 
@@ -23,4 +23,4 @@ private:
   std::shared_ptr<Material> material;
 };
 
-#endif // !HITTABLE_HPP_
+#endif // !HITTABLES_HITTABLE_HPP_
