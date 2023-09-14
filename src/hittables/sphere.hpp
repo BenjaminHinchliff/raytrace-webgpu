@@ -9,7 +9,7 @@
 
 class Sphere : public Hittable {
 public:
-  Sphere(glm::vec3 center, float radius);
+  Sphere(glm::vec3 center, float radius, std::shared_ptr<Material> material);
 
   virtual std::string generate() const override;
 

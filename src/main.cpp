@@ -1,8 +1,10 @@
-#include "hittable.hpp"
-#include "plane.hpp"
+#include "hittables/hittable.hpp"
+#include "hittables/plane.hpp"
+#include "hittables/sphere.hpp"
+#include "materials/lambertian.hpp"
+#include "materials/material.hpp"
 #include "render.hpp"
 #include "scene.hpp"
-#include "sphere.hpp"
 
 #include <cmrc/cmrc.hpp>
 #include <glm/vec2.hpp>
@@ -36,13 +38,16 @@ int main() {
       .size = {1920, 1080},
   };
 
+  std::shared_ptr<Material> red =
+      std::make_shared<Lambertian>(glm::vec3{0.7, 0.3, 0.3});
   std::vector<std::unique_ptr<Hittable>> hittables;
-  hittables.push_back(std::make_unique<Sphere>(glm::vec3{0.0, 0.0, -1.0}, 0.5));
+  hittables.push_back(
+      std::make_unique<Sphere>(glm::vec3{0.0, 0.0, -1.0}, 0.5, red));
   hittables.push_back(std::make_unique<Plane>(glm::vec3{0.0, -0.5, -1.0},
-                                              glm::vec3{0.0, -1.0, 0.0}));
+                                              glm::vec3{0.0, -1.0, 0.0}, red));
   for (int i = 0; i < 5; i++) {
-    hittables.push_back(
-        std::make_unique<Sphere>(glm::vec3{-1.0 + 0.5 * i, -0.4, -0.5}, 0.1));
+    hittables.push_back(std::make_unique<Sphere>(
+        glm::vec3{-1.0 + 0.5 * i, -0.4, -0.5}, 0.1, red));
   }
 
   Scene scene{std::move(hittables)};

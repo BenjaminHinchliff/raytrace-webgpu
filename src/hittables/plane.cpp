@@ -1,7 +1,9 @@
 #include "plane.hpp"
+#include "hittables/hittable.hpp"
 
-Plane::Plane(glm::vec3 point, glm::vec3 normal)
-    : point{point}, normal{normal} {}
+Plane::Plane(glm::vec3 point, glm::vec3 normal,
+             std::shared_ptr<Material> material)
+    : Hittable(material), point{point}, normal{normal} {}
 
 std::string Plane::generate() const {
   auto builder =

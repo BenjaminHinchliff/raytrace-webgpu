@@ -1,7 +1,7 @@
 #ifndef SCENE_H_
 #define SCENE_H_
 
-#include "hittable.hpp"
+#include "hittables/hittable.hpp"
 
 #include <memory>
 #include <string>

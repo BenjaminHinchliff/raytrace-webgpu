@@ -18,6 +18,15 @@ fn xorshift32() -> u32 {
     return s;
 }
 
+alias MaterialType = u32;
+const MATERIAL_LAMBERTIAN = 0;
+const MATERIAL_METAL = 1;
+
+struct Material {
+    type_: MaterialType,
+    data: vec4<f32>,
+}
+
 struct Sphere {
     center: vec3<f32>,
     radius: f32,
@@ -38,6 +47,7 @@ struct HitRecord {
     point: vec3<f32>,
     normal: vec3<f32>,
     front_face: bool,
+    material: Material,
 }
 
 fn hitrecord_set_face_normal(record: ptr<function, HitRecord>, ray: Ray) {
@@ -145,7 +155,7 @@ fn ray_color(ray: Ray) -> vec3<f32> {
     var cur_ray = ray;
     var record = hit_scene(cur_ray, 0.001, RAY_MAX);
     for (var i = 0; record.hit && i < MAX_DEPTH; i++) {
-        color = 0.5 * color;
+        color = record.material.data.xyz * color;
         let direction = record.normal + random_vec3_normalized();
         cur_ray = Ray(record.point, direction);
         record = hit_scene(cur_ray, 0.001, RAY_MAX);
@@ -177,7 +187,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     let aspect = f32(dims.y) / f32(dims.x);
     let focal_length = 0.5;
-    let viewport_height = 2.0;
+    let viewport_height = 1.0;
     let viewport = vec2<f32>(viewport_height / aspect, viewport_height);
     let viewport_delta = vec2<f32>(viewport.x / f32(dims.x), -viewport.y / f32(dims.y));
     let viewport_upper_left = vec3<f32>(vec2<f32>(-viewport.x / 2.0, viewport.y / 2.0) + 0.5 * viewport_delta, -focal_length);
