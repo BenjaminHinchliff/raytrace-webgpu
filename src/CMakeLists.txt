@@ -25,7 +25,7 @@ add_executable(traceg ${TRACEG_SRC} ${TRACEG_INC})
 target_include_directories(traceg PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
 
 target_compile_features(traceg PRIVATE cxx_std_20)
-target_link_libraries(traceg PRIVATE webgpu_dawn webgpu_cpp stb glm shaders)
+target_link_libraries(traceg PRIVATE webgpu_dawn webgpu_cpp dawn_proc stb glm shaders)
 
 if(MSVC)
   target_compile_options(traceg PRIVATE /W4 /WX)
