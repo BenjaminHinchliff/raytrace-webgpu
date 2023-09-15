@@ -86,13 +86,13 @@ void Logging(WGPULoggingType type, const char *msg, void *) {
 } // namespace logging
 
 Renderer::Renderer(std::string source)
-    : source{source}
-
-      ,
-      instance{wgpu::CreateInstance()} {
+    : source{source}, instance{wgpu::CreateInstance()} {
   // Get Adapter
+  wgpu::RequestAdapterOptions adapterOpts{
+      .powerPreference = wgpu::PowerPreference::HighPerformance,
+  };
   instance.RequestAdapter(
-      nullptr,
+      &adapterOpts,
       [](WGPURequestAdapterStatus status, WGPUAdapter adapterIn,
          const char *msg, void *userdata) {
         using namespace std::string_literals;
