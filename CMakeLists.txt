@@ -45,6 +45,14 @@ if (stb_ADDED)
 endif()
 
 CPMAddPackage(
+    NAME cxxopts
+    GIT_REPOSITORY https://github.com/jarro2783/cxxopts.git
+    GIT_TAG "v3.1.1"
+    GIT_PROGRESS TRUE
+
+)
+
+CPMAddPackage(
     NAME glm
     OPTIONS "BUILD_SHARED_LIBS OFF"
     VERSION 0.9.9.8

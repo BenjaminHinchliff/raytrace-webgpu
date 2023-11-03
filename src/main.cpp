@@ -16,6 +16,8 @@
 #define STB_IMAGE_WRITE_IMPLEMENTATION
 #include <stb_image_write.h>
 
+#include <cxxopts.hpp>
+
 #include <cstddef>
 #include <cstdint>
 #include <cstdlib>
@@ -33,7 +35,26 @@ public:
   glm::uvec2 size;
 };
 
-int main() {
+int main(int argc, char **argv) {
+  cxxopts::Options options("traceg",
+                           "WebGPU DAWN based GPU-accelerated raytracer");
+  // clang-format off
+  options.add_options()
+    ("o,output", "Output file", cxxopts::value<std::string>())
+    ("h,help", "Print usage")
+    ;
+  // clang-format on
+  options.parse_positional({"output"});
+
+  auto result = options.parse(argc, argv);
+
+  if (result.count("help") > 0 || result.count("output") == 0) {
+    std::cerr << options.help() << '\n';
+    return EXIT_FAILURE;
+  }
+
+  auto output_file = result["output"].as<std::string>();
+
   auto fs = cmrc::shaders::get_filesystem();
 
   TracerConfig config{
@@ -65,8 +86,8 @@ int main() {
   std::cerr << "GPU: " << props.name << '\n';
   auto output = renderer.render_scene(std::move(scene), {1920, 1080});
 
-  stbi_write_png("out.png", config.size.x, config.size.y, 4, output.data(),
-                 config.size.x * 4);
+  stbi_write_png(output_file.c_str(), config.size.x, config.size.y, 4,
+                 output.data(), config.size.x * 4);
 
-  return 0;
+  return EXIT_SUCCESS;
 }

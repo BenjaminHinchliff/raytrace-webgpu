@@ -85,14 +85,11 @@ void Logging(WGPULoggingType type, const char *msg, void *) {
 }
 } // namespace logging
 
-Renderer::Renderer(std::string source)
-    : source{source}, instance{wgpu::CreateInstance()} {
-  // Get Adapter
-  wgpu::RequestAdapterOptions adapterOpts{
-      .powerPreference = wgpu::PowerPreference::HighPerformance,
-  };
+wgpu::Adapter
+Renderer::request_adapter(const wgpu::RequestAdapterOptions &options) const {
+  wgpu::Adapter adapter;
   instance.RequestAdapter(
-      &adapterOpts,
+      &options,
       [](WGPURequestAdapterStatus status, WGPUAdapter adapterIn,
          const char *msg, void *userdata) {
         using namespace std::string_literals;
@@ -104,13 +101,26 @@ Renderer::Renderer(std::string source)
             wgpu::Adapter::Acquire(adapterIn);
       },
       &adapter);
+  return adapter;
+}
 
-  // Get device
-  device = adapter.CreateDevice();
+wgpu::Device Renderer::setup_device(const wgpu::Adapter adapter) const {
+  wgpu::Device device = adapter.CreateDevice();
   device.SetLabel("Primary Device");
   device.SetUncapturedErrorCallback(logging::Error, nullptr);
   device.SetDeviceLostCallback(logging::DeviceLost, nullptr);
   device.SetLoggingCallback(logging::Logging, nullptr);
+  return device;
+}
+
+Renderer::Renderer(std::string source)
+    : source{source}, instance{wgpu::CreateInstance()} {
+  // Get Adapter
+  wgpu::RequestAdapterOptions adapterOpts{
+      .powerPreference = wgpu::PowerPreference::HighPerformance,
+  };
+  adapter = request_adapter(adapterOpts);
+  device = setup_device(adapter);
 }
 
 wgpu::AdapterProperties Renderer::adapter_properties() const {
@@ -119,18 +129,19 @@ wgpu::AdapterProperties Renderer::adapter_properties() const {
   return adapterProps;
 }
 
-constexpr uint32_t BYTES_PER_ROW_ALIGN = 256;
-
 uint32_t paddedBytesPerRow(uint32_t width) {
+  // This is defined inside of DAWN and the WebGPU spec and isn't reasonable to
+  // pull from them
+  constexpr uint32_t BYTES_PER_ROW_ALIGN = 256;
   uint32_t bytesPerRow = width * 4;
   uint32_t padding = (BYTES_PER_ROW_ALIGN - bytesPerRow % BYTES_PER_ROW_ALIGN) %
                      BYTES_PER_ROW_ALIGN;
   return bytesPerRow + padding;
 }
 
-constexpr glm::uvec2 WORKGROUP_SIZE{16, 16};
-
 glm::uvec2 calculateWorkgroups(glm::uvec2 size) {
+  // this has to be hardcoded because it is also in compute.wgsl
+  constexpr glm::uvec2 WORKGROUP_SIZE{16, 16};
   return (size + WORKGROUP_SIZE - glm::uvec2{1}) / WORKGROUP_SIZE;
 }
 

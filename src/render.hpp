@@ -17,6 +17,11 @@ public:
   std::vector<uint8_t> render_scene(Scene scene, glm::uvec2 size);
 
 private:
+  wgpu::Adapter
+  request_adapter(const wgpu::RequestAdapterOptions &options) const;
+  wgpu::Device setup_device(const wgpu::Adapter adapter) const;
+
+private:
   std::string source;
   wgpu::Instance instance;
   wgpu::Adapter adapter;
