@@ -9,14 +9,11 @@
 #include "scene.hpp"
 
 #include <cmrc/cmrc.hpp>
+#include <cxxopts.hpp>
 #include <glm/vec2.hpp>
+#include <stb_image_write.h>
 #include <webgpu/webgpu_cpp.h>
 #include <webgpu/webgpu_glfw.h>
-
-#define STB_IMAGE_WRITE_IMPLEMENTATION
-#include <stb_image_write.h>
-
-#include <cxxopts.hpp>
 
 #include <cstddef>
 #include <cstdint>
