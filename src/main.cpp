@@ -1,6 +1,7 @@
 #include "hittables/hittable.hpp"
 #include "hittables/plane.hpp"
 #include "hittables/sphere.hpp"
+#include "load.hpp"
 #include "materials/dielectric.hpp"
 #include "materials/lambertian.hpp"
 #include "materials/material.hpp"
@@ -37,51 +38,38 @@ int main(int argc, char **argv) {
                            "WebGPU DAWN based GPU-accelerated raytracer");
   // clang-format off
   options.add_options()
+    ("s,scene", "Scene input file", cxxopts::value<std::string>())
     ("o,output", "Output file", cxxopts::value<std::string>())
     ("h,help", "Print usage")
     ;
   // clang-format on
-  options.parse_positional({"output"});
+  options.parse_positional({"scene", "output"});
+  options.positional_help("<SCENE> <OUTPUT>").show_positional_help();
 
   auto result = options.parse(argc, argv);
 
-  if (result.count("help") > 0 || result.count("output") == 0) {
+  if (result.count("help") > 0 || result.count("scene") == 0 ||
+      result.count("output") == 0) {
     std::cerr << options.help() << '\n';
     return EXIT_FAILURE;
   }
 
+  auto scene_file = result["scene"].as<std::string>();
   auto output_file = result["output"].as<std::string>();
 
   auto fs = cmrc::shaders::get_filesystem();
-
-  TracerConfig config{
-      .size = {1920, 1080},
-  };
-
-  auto green = std::make_shared<Lambertian>(glm::vec3{0.8, 0.8, 0.0});
-  auto red = std::make_shared<Lambertian>(glm::vec3{0.7, 0.3, 0.3});
-  auto glass = std::make_shared<Dielectric>(1.5);
-  auto bronze = std::make_shared<Metal>(glm::vec3{0.8, 0.6, 0.2}, 1.0);
-  std::vector<std::unique_ptr<Hittable>> hittables;
-  hittables.push_back(
-      std::make_unique<Sphere>(glm::vec3{0.0, 0.0, -1.0}, 0.5, red));
-  hittables.push_back(
-      std::make_unique<Sphere>(glm::vec3{-1.0, 0.0, -1.0}, 0.5, glass));
-  hittables.push_back(
-      std::make_unique<Sphere>(glm::vec3{-1.0, 0.0, -1.0}, -0.4, glass));
-  hittables.push_back(
-      std::make_unique<Sphere>(glm::vec3{1.0, 0.0, -1.0}, 0.5, bronze));
-  hittables.push_back(std::make_unique<Plane>(
-      glm::vec3{0.0, -0.5, -1.0}, glm::vec3{0.0, -1.0, 0.0}, green));
-
-  Scene scene{std::move(hittables)};
 
   auto f = fs.open("compute.wgsl");
   std::string source{f.begin(), f.end()};
   Renderer renderer{source};
   auto props = renderer.adapter_properties();
   std::cerr << "GPU: " << props.name << '\n';
-  auto output = renderer.render_scene(std::move(scene), {1920, 1080});
+
+  TracerConfig config{
+      .size = {640, 480},
+  };
+  Scene scene = load_scene(scene_file);
+  auto output = renderer.render_scene(std::move(scene), config.size);
 
   stbi_write_png(output_file.c_str(), config.size.x, config.size.y, 4,
                  output.data(), config.size.x * 4);

@@ -1,0 +1,36 @@
+---
+hittables:
+  - sphere:
+      center: [0.0, 0.0, -1.0]
+      radius: 0.5
+      material: red
+  - sphere:
+      center: [-1.0, 0.0, -1.0]
+      radius: 0.5
+      material: glass
+  - sphere:
+      center: [-1.0, 0.0, -1.0]
+      radius: -0.4
+      material: glass
+  - sphere:
+      center: [1.0, 0.0, -1.0]
+      radius: 0.5
+      material: bronze
+  - plane:
+      point: [0.0, -1.0, 0.0]
+      normal: [0.0, -1.0, 0.0]
+      material: green
+materials:
+  - green:
+      lambertian:
+        albedo: [0.8, 0.8, 0.0]
+  - red:
+      lambertian:
+        albedo: [0.7, 0.3, 0.3]
+  - glass:
+      dielectric:
+        ir: 1.5
+  - bronze:
+      metal:
+        albedo: [0.8, 0.6, 0.2]
+        fuzz: 1.0

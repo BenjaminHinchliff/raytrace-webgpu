@@ -9,6 +9,7 @@
 
 class Scene {
 public:
+  Scene();
   Scene(std::vector<std::unique_ptr<Hittable>> hittables);
 
   std::string generate() const;

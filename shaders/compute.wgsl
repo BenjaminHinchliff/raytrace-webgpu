@@ -201,7 +201,7 @@ fn ray_color(ray: Ray) -> vec3<f32> {
     return color;
 }
 
-const SAMPLES_PER_PIXEL = 2000;
+const SAMPLES_PER_PIXEL = 10;
 
 fn random_uv_noise() -> vec2<f32> {
     return vec2<f32>(random_f32_range(-0.5, 0.5), random_f32_range(-0.5, 0.5));

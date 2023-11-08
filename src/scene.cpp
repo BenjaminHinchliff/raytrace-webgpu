@@ -3,6 +3,8 @@
 
 #include <string_view>
 
+Scene::Scene() : Scene{{}} {}
+
 Scene::Scene(std::vector<std::unique_ptr<Hittable>> hittables)
     : hittables{std::move(hittables)} {}
 
