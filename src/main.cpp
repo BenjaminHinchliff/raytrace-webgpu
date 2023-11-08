@@ -22,6 +22,7 @@
 #include <fstream>
 #include <iostream>
 #include <memory>
+#include <ranges>
 #include <sstream>
 #include <string>
 #include <utility>
@@ -33,6 +34,13 @@ public:
   glm::uvec2 size;
 };
 
+glm::uvec2 parse_dims(const std::string &dims_str) {
+  auto x_loc = dims_str.find("x");
+  auto width = std::stoi(dims_str.substr(0, x_loc));
+  auto height = std::stoi(dims_str.substr(x_loc + 1));
+  return {width, height};
+}
+
 int main(int argc, char **argv) {
   cxxopts::Options options("traceg",
                            "WebGPU DAWN based GPU-accelerated raytracer");
@@ -40,6 +48,8 @@ int main(int argc, char **argv) {
   options.add_options()
     ("s,scene", "Scene input file", cxxopts::value<std::string>())
     ("o,output", "Output file", cxxopts::value<std::string>())
+    ("d,dims", "Dimensions of the output image in format WxH (e.g. 1920x1080)",
+     cxxopts::value<std::string>()->default_value("640x480"))
     ("h,help", "Print usage")
     ;
   // clang-format on
@@ -56,6 +66,7 @@ int main(int argc, char **argv) {
 
   auto scene_file = result["scene"].as<std::string>();
   auto output_file = result["output"].as<std::string>();
+  auto size = parse_dims(result["dims"].as<std::string>());
 
   auto fs = cmrc::shaders::get_filesystem();
 
@@ -65,14 +76,11 @@ int main(int argc, char **argv) {
   auto props = renderer.adapter_properties();
   std::cerr << "GPU: " << props.name << '\n';
 
-  TracerConfig config{
-      .size = {640, 480},
-  };
   Scene scene = load_scene(scene_file);
-  auto output = renderer.render_scene(std::move(scene), config.size);
+  auto output = renderer.render_scene(std::move(scene), size);
 
-  stbi_write_png(output_file.c_str(), config.size.x, config.size.y, 4,
-                 output.data(), config.size.x * 4);
+  stbi_write_png(output_file.c_str(), size.x, size.y, 4,
+                 output.data(), size.x * 4);
 
   return EXIT_SUCCESS;
 }
