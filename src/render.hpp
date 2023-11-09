@@ -6,6 +6,7 @@
 #include <glm/vec2.hpp>
 #include <webgpu/webgpu_cpp.h>
 
+#include <cstdint>
 #include <string>
 #include <vector>
 
@@ -14,7 +15,8 @@ public:
   Renderer(std::string source);
 
   wgpu::AdapterProperties adapter_properties() const;
-  std::vector<uint8_t> render_scene(Scene scene, glm::uvec2 size);
+  std::vector<uint8_t> render_scene(Scene scene, glm::uvec2 size,
+                                    uint32_t samples, uint32_t max_depth);
 
 private:
   wgpu::Adapter

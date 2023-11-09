@@ -1,5 +1,7 @@
 #include "render.hpp"
 
+#include <array>
+#include <cstdint>
 #include <iostream>
 #include <stdexcept>
 
@@ -156,7 +158,14 @@ wgpu::ShaderModule create_shader(wgpu::Device device,
   return device.CreateShaderModule(&desc);
 }
 
-std::vector<uint8_t> Renderer::render_scene(Scene scene, glm::uvec2 size) {
+struct RenderConfig {
+  uint32_t samples_per_pixel;
+  uint32_t max_depth;
+};
+
+std::vector<uint8_t> Renderer::render_scene(Scene scene, glm::uvec2 size,
+                                            uint32_t samples,
+                                            uint32_t max_depth) {
   std::string sourceWithScene{scene.generate() + source};
   auto computeShader = create_shader(device, sourceWithScene);
 
@@ -196,6 +205,52 @@ std::vector<uint8_t> Renderer::render_scene(Scene scene, glm::uvec2 size) {
   auto computeOutputBindGroup =
       device.CreateBindGroup(&computeOutputBindGroupDesc);
 
+  std::array<wgpu::BindGroupLayoutEntry, 1> configBindGroupLayoutEntries{
+      wgpu::BindGroupLayoutEntry{
+          .binding = 0,
+          .visibility = wgpu::ShaderStage::Compute,
+          .buffer =
+              wgpu::BufferBindingLayout{
+                  .type = wgpu::BufferBindingType::Uniform,
+              },
+      },
+  };
+  wgpu::BindGroupLayoutDescriptor configBindGroupLayoutDesc{
+      .label = "Config Bind Group Layout",
+      .entryCount = configBindGroupLayoutEntries.size(),
+      .entries = configBindGroupLayoutEntries.data(),
+  };
+  auto configBindGroupLayout =
+      device.CreateBindGroupLayout(&configBindGroupLayoutDesc);
+
+  RenderConfig config{
+      .samples_per_pixel = samples,
+      .max_depth = max_depth,
+  };
+  wgpu::BufferDescriptor configBufferDesc{
+      .label = "Config Buffer",
+      .usage = wgpu::BufferUsage::Uniform | wgpu::BufferUsage::CopyDst,
+      .size = sizeof(RenderConfig),
+      .mappedAtCreation = true,
+  };
+  auto configBuffer = device.CreateBuffer(&configBufferDesc);
+  *static_cast<RenderConfig *>(configBuffer.GetMappedRange()) = config;
+  configBuffer.Unmap();
+
+  std::array<wgpu::BindGroupEntry, 1> configBindGroupEntries{
+      wgpu::BindGroupEntry{
+          .binding = 0,
+          .buffer = configBuffer,
+      },
+  };
+  wgpu::BindGroupDescriptor configBindGroupDesc{
+      .label = "Config Bind Group",
+      .layout = computePipeline.GetBindGroupLayout(1),
+      .entryCount = configBindGroupEntries.size(),
+      .entries = configBindGroupEntries.data(),
+  };
+  auto configBindGroup = device.CreateBindGroup(&configBindGroupDesc);
+
   wgpu::CommandEncoderDescriptor encDesc{
       .label = "Compute Encoder",
   };
@@ -208,6 +263,7 @@ std::vector<uint8_t> Renderer::render_scene(Scene scene, glm::uvec2 size) {
     auto computePass = computeEncoder.BeginComputePass(&passDesc);
     computePass.SetPipeline(computePipeline);
     computePass.SetBindGroup(0, computeOutputBindGroup);
+    computePass.SetBindGroup(1, configBindGroup);
     glm::uvec2 workgroups = calculateWorkgroups(size);
     computePass.DispatchWorkgroups(workgroups.x, workgroups.y);
     computePass.End();

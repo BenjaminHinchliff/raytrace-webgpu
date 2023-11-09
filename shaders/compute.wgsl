@@ -1,6 +1,14 @@
 @group(0) @binding(0)
 var output_texture: texture_storage_2d<rgba8unorm, write>;
 
+struct ConfigUniform {
+    samples_per_pixel: u32,
+    max_depth: u32
+};
+
+@group(1) @binding(0)
+var<uniform> config: ConfigUniform;
+
 // xorshift rng
 var<private> s: u32;
 // seed with linear prng
@@ -154,14 +162,13 @@ fn reflectance(cosine: f32, ref_idx: f32) -> f32 {
 }
 
 const RAY_MAX: f32 = 1e30;
-const MAX_DEPTH: i32 = 10;
 fn ray_color(ray: Ray) -> vec3<f32> {
     let unit_dir = normalize(ray.direction);
     let a = 0.5 * (unit_dir.y + 1.0);
     var color = (1.0 - a) * vec3<f32>(1.0, 1.0, 1.0) + a * vec3<f32>(0.5, 0.7, 1.0);
     var cur_ray = ray;
     var record = hit_scene(cur_ray, 0.001, RAY_MAX);
-    for (var i = 0; record.hit && i < MAX_DEPTH; i++) {
+    for (var i: u32 = 0; record.hit && i < config.max_depth; i++) {
         color = record.material.data.xyz * color;
         switch record.material.type_ {
             case MATERIAL_LAMBERTIAN, default: {
@@ -201,8 +208,6 @@ fn ray_color(ray: Ray) -> vec3<f32> {
     return color;
 }
 
-const SAMPLES_PER_PIXEL = 10;
-
 fn random_uv_noise() -> vec2<f32> {
     return vec2<f32>(random_f32_range(-0.5, 0.5), random_f32_range(-0.5, 0.5));
 }
@@ -227,15 +232,18 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let viewport_height = 1.0;
     let viewport = vec2<f32>(viewport_height / aspect, viewport_height);
     let viewport_delta = vec2<f32>(viewport.x / f32(dims.x), -viewport.y / f32(dims.y));
-    let viewport_upper_left = vec3<f32>(vec2<f32>(-viewport.x / 2.0, viewport.y / 2.0) + 0.5 * viewport_delta, -focal_length);
+    let viewport_upper_left =
+        vec3<f32>(vec2<f32>(-viewport.x / 2.0, viewport.y / 2.0) + 0.5 * viewport_delta,
+                  -focal_length);
     let uv = viewport_upper_left + vec3<f32>(viewport_delta * vec2<f32>(coords.xy), 0.0);
 
     var color = vec3<f32>(0.0);
-    for (var i = 0; i < SAMPLES_PER_PIXEL; i++) {
+    for (var i: u32 = 0; i < config.samples_per_pixel; i++) {
         let noise = vec3<f32>(random_uv_noise() * viewport_delta, 0.0);
         let ray = Ray(vec3<f32>(0.0), uv + noise);
         color += ray_color(ray);
     }
 
-    textureStore(output_texture, coords.xy, vec4<f32>(color / SAMPLES_PER_PIXEL, 1.0));
+    textureStore(output_texture, coords.xy,
+                 vec4<f32>(color / f32(config.samples_per_pixel), 1.0));
 }

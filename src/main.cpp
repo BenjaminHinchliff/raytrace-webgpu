@@ -50,6 +50,8 @@ int main(int argc, char **argv) {
     ("o,output", "Output file", cxxopts::value<std::string>())
     ("d,dims", "Dimensions of the output image in format WxH (e.g. 1920x1080)",
      cxxopts::value<std::string>()->default_value("640x480"))
+    ("a,samples", "Number of samples per pixel", cxxopts::value<uint32_t>()->default_value("100"))
+    ("p,depth", "Max recursion depth of a ray", cxxopts::value<uint32_t>()->default_value("10"))
     ("h,help", "Print usage")
     ;
   // clang-format on
@@ -67,6 +69,8 @@ int main(int argc, char **argv) {
   auto scene_file = result["scene"].as<std::string>();
   auto output_file = result["output"].as<std::string>();
   auto size = parse_dims(result["dims"].as<std::string>());
+  auto samples = result["samples"].as<uint32_t>();
+  auto depth = result["depth"].as<uint32_t>();
 
   auto fs = cmrc::shaders::get_filesystem();
 
@@ -77,10 +81,10 @@ int main(int argc, char **argv) {
   std::cerr << "GPU: " << props.name << '\n';
 
   Scene scene = load_scene(scene_file);
-  auto output = renderer.render_scene(std::move(scene), size);
+  auto output = renderer.render_scene(std::move(scene), size, samples, depth);
 
-  stbi_write_png(output_file.c_str(), size.x, size.y, 4,
-                 output.data(), size.x * 4);
+  stbi_write_png(output_file.c_str(), size.x, size.y, 4, output.data(),
+                 size.x * 4);
 
   return EXIT_SUCCESS;
 }
